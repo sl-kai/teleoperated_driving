@@ -1,0 +1,6 @@
+/**:
+  ros__parameters:
+    steering_angle_source: steering_tire_angle
+    kinematic_reference: rear_axle
+    prediction_length_m: 6.0
+    prediction_steps: 40

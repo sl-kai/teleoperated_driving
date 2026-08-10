@@ -68,7 +68,7 @@ def load_yaml(testcase, path):
 
 
 class Peanut01VideoDeploymentTest(unittest.TestCase):
-    def test_profile_enables_video_without_duplicate_lidar_or_projection(self):
+    def test_profile_enables_video_and_projection_without_duplicate_lidar(self):
         profile = load_yaml(self, PROFILE)
 
         self.assertEqual("peanut01", profile["launch_parameters"]["vehicleID"])
@@ -76,7 +76,7 @@ class Peanut01VideoDeploymentTest(unittest.TestCase):
         self.assertTrue(packages["both"]["tod_rtsp"])
         self.assertNotIn("tod_lidar", packages["operator"])
         self.assertNotIn("tod_lidar", packages["both"])
-        self.assertFalse(packages["operator"]["tod_projection"])
+        self.assertTrue(packages["operator"]["tod_projection"])
         self.assertFalse(packages["both"]["tod_transform"])
 
     def test_three_front_camera_topics_and_low_latency_profile(self):

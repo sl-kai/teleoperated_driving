@@ -4,7 +4,7 @@ launch_parameters:
 
 packages_to_launch:
   operator:
-    tod_projection: False
+    tod_projection: True
     tod_input_devices: True
     tod_command_creation: True
     tod_visual: True
