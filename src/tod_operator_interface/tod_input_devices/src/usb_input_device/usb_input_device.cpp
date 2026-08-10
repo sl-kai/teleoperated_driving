@@ -5,6 +5,7 @@
  **/
 
 #include "tod_input_devices/usb_input_device/usb_input_device.hpp"
+#include <cerrno>
 #include "sys/statvfs.h"
 
 namespace tod_input_device {
@@ -44,37 +45,50 @@ bool UsbInputDevice::deactivate() {
 }
 
 void UsbInputDevice::run() {
-    fd_set read_fds;
-    FD_ZERO(&read_fds);
-    struct timeval timeout;
-
     while (running) {
-        timeout.tv_sec = 0.2; // set timeout to 0.2 sec
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
         FD_SET(_js, &read_fds);
-        if (select(_js + 1, &read_fds, NULL, NULL, &timeout) == 1) {
-            if (read_event(_js, &_jsevent) == -1) {
-                error_callback("USB Input Device - Check Connection and restart!");
-            }
-            switch (_jsevent.type) {
-            case JS_EVENT_BUTTON:
-                button_callback(_jsevent.number, _jsevent.value);
-                break;
-            case JS_EVENT_AXIS:
-                axis_callback(_jsevent.number, scale_value(_jsevent.value,
-                    MIN_POSITION_INCREMENTS_USB, MAX_POSITION_INCREMENTS_USB));
-                break;
-            case (JS_EVENT_AXIS | JS_EVENT_INIT): // Handle initial events similar to normal events
-                axis_callback(_jsevent.number, scale_value(_jsevent.value,
-                    MIN_POSITION_INCREMENTS_USB, MAX_POSITION_INCREMENTS_USB));
-                break;
-            case (JS_EVENT_BUTTON | JS_EVENT_INIT):
-                button_callback(_jsevent.number, _jsevent.value);
-                break;
-            default:
+
+        struct timeval timeout{};
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 200000;
+
+        const int select_result = select(_js + 1, &read_fds, NULL, NULL, &timeout);
+        if (select_result < 0) {
+            if (errno != EINTR) {
+                error_callback("USB Input Device - select failed: " + std::string(std::strerror(errno)));
                 break;
             }
-            fflush(stdout);
+            continue;
         }
+        if (select_result == 0) {
+            continue;
+        }
+        if (read_event(_js, &_jsevent) == -1) {
+            error_callback("USB Input Device - Check Connection and restart!");
+            break;
+        }
+
+        switch (_jsevent.type) {
+        case JS_EVENT_BUTTON:
+            button_callback(_jsevent.number, _jsevent.value);
+            break;
+        case JS_EVENT_AXIS:
+            axis_callback(_jsevent.number, scale_value(_jsevent.value,
+                MIN_POSITION_INCREMENTS_USB, MAX_POSITION_INCREMENTS_USB));
+            break;
+        case (JS_EVENT_AXIS | JS_EVENT_INIT): // Handle initial events similar to normal events
+            axis_callback(_jsevent.number, scale_value(_jsevent.value,
+                MIN_POSITION_INCREMENTS_USB, MAX_POSITION_INCREMENTS_USB));
+            break;
+        case (JS_EVENT_BUTTON | JS_EVENT_INIT):
+            button_callback(_jsevent.number, _jsevent.value);
+            break;
+        default:
+            break;
+        }
+        fflush(stdout);
     }
 }
 
