@@ -84,4 +84,35 @@ TEST(RearAxleProjection, InvalidInputsAreRejected)
     std::invalid_argument);
 }
 
+TEST(ProjectionConfiguration, TireAngleSourceUsesMeasuredTireAngle)
+{
+  const auto source = tod_projection::parse_steering_angle_source("steering_tire_angle");
+
+  EXPECT_DOUBLE_EQ(
+    tod_projection::select_steering_angle(source, 0.7, 0.12, 6.1, 1.047), 0.12);
+}
+
+TEST(ProjectionConfiguration, WheelAngleSourcePreservesLegacyConversion)
+{
+  const auto source = tod_projection::parse_steering_angle_source("steering_wheel_angle");
+
+  EXPECT_NEAR(
+    tod_projection::select_steering_angle(source, 0.7, 0.12, 6.1, 1.047),
+    0.7 / 6.1 * 1.047, 1e-9);
+}
+
+TEST(ProjectionConfiguration, UnknownConfigurationValuesAreRejected)
+{
+  EXPECT_THROW(
+    tod_projection::parse_steering_angle_source("unknown"), std::invalid_argument);
+  EXPECT_EQ(
+    tod_projection::parse_kinematic_reference("legacy_center"),
+    tod_projection::KinematicReference::LegacyCenter);
+  EXPECT_EQ(
+    tod_projection::parse_kinematic_reference("rear_axle"),
+    tod_projection::KinematicReference::RearAxle);
+  EXPECT_THROW(
+    tod_projection::parse_kinematic_reference("front_axle"), std::invalid_argument);
+}
+
 }  // namespace

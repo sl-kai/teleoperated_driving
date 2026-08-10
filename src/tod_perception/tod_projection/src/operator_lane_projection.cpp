@@ -6,6 +6,9 @@
 
 #include "tod_projection/operator_lane_projection.hpp"
 
+#include <cmath>
+#include <stdexcept>
+
 namespace tod_projection {
 
 OperatorLaneProjection::OperatorLaneProjection()
@@ -41,7 +44,37 @@ OperatorLaneProjection::OperatorLaneProjection()
   _vehicle_params =
       std::make_unique<tod_core::param_set::Vehicle>(this, config_path + "/vehicle_config/");
 
-  _vehicle_params->load_parameters();
+  if (!_vehicle_params->load_parameters()) {
+    throw std::runtime_error("failed to load vehicle parameters for lane projection");
+  }
+
+  const auto steering_source = this->declare_parameter<std::string>(
+    "steering_angle_source", "steering_wheel_angle");
+  const auto kinematic_reference = this->declare_parameter<std::string>(
+    "kinematic_reference", "legacy_center");
+  _prediction_length_m = this->declare_parameter<double>("prediction_length_m", 6.0);
+  const auto prediction_steps = this->declare_parameter<int64_t>("prediction_steps", 40);
+  if (prediction_steps <= 0) {
+    throw std::invalid_argument("prediction_steps must be positive");
+  }
+  _prediction_steps = static_cast<std::size_t>(prediction_steps);
+  _steering_angle_source = parse_steering_angle_source(steering_source);
+  _kinematic_reference = parse_kinematic_reference(kinematic_reference);
+
+  if (_kinematic_reference == KinematicReference::RearAxle) {
+    _rear_axle_geometry = {
+      _vehicle_params->get_wheel_base(),
+      _vehicle_params->get_distance_front_bumper() -
+        _vehicle_params->get_distance_front_axle(),
+      _vehicle_params->get_distance_rear_bumper() -
+        _vehicle_params->get_distance_rear_axle(),
+      _vehicle_params->get_width(),
+      _vehicle_params->get_max_rwa_rad(),
+    };
+    // Validate all configured geometry before accepting live vehicle state.
+    (void)project(
+      _rear_axle_geometry, 0.0, 1, _prediction_length_m, _prediction_steps);
+  }
 
 }
 
@@ -73,6 +106,52 @@ void OperatorLaneProjection::callback_primary_vehicle_state(
   pose.pose.position.z = 0.0;
   pose.header = laneFrontLeft.header;
   pose.pose.orientation.w = 1.0;
+
+  if (_kinematic_reference == KinematicReference::RearAxle) {
+    double tire_angle;
+    try {
+      tire_angle = select_steering_angle(
+        _steering_angle_source, msg.steering_wheel_angle, msg.steering_tire_angle,
+        _vehicle_params->get_max_swa_rad(), _vehicle_params->get_max_rwa_rad());
+    } catch (const std::invalid_argument & error) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 5000,
+        "Skipping lane projection: %s", error.what());
+      return;
+    }
+
+    if (std::abs(tire_angle) > _rear_axle_geometry.maximum_tire_angle) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 5000,
+        "Clamping tire angle %.3f rad to vehicle limit %.3f rad",
+        tire_angle, _rear_axle_geometry.maximum_tire_angle);
+    }
+
+    const auto paths = project(
+      _rear_axle_geometry, tire_angle, direction,
+      _prediction_length_m, _prediction_steps);
+    const auto append_path = [&pose](
+      const std::vector<Point> & points, nav_msgs::msg::Path & path) {
+        for (const auto & point : points) {
+          pose.pose.position.x = point.x;
+          pose.pose.position.y = point.y;
+          path.poses.push_back(pose);
+        }
+      };
+    append_path(paths.front_left, laneFrontLeft);
+    append_path(paths.front_right, laneFrontRight);
+    append_path(paths.rear_left, laneRearLeft);
+    append_path(paths.rear_right, laneRearRight);
+
+    _publisher_vehicle_lane_fl->publish(laneFrontLeft);
+    _publisher_vehicle_lane_fr->publish(laneFrontRight);
+    _publisher_vehicle_lane_rl->publish(laneRearLeft);
+    _publisher_vehicle_lane_rr->publish(laneRearRight);
+    RCLCPP_INFO_ONCE(
+      this->get_logger(), "%s: Published first rear-axle vehicle lanes to ROS!",
+      this->get_name());
+    return;
+  }
 
   const float rwa = tod_helper::Vehicle::Model::swa2rwa(
       msg.steering_wheel_angle, _vehicle_params->get_max_swa_rad(),

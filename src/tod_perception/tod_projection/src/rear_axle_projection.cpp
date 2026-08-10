@@ -96,4 +96,51 @@ Paths project(
   return paths;
 }
 
+SteeringAngleSource parse_steering_angle_source(const std::string & value)
+{
+  if (value == "steering_wheel_angle") {
+    return SteeringAngleSource::SteeringWheelAngle;
+  }
+  if (value == "steering_tire_angle") {
+    return SteeringAngleSource::SteeringTireAngle;
+  }
+  throw std::invalid_argument(
+          "steering_angle_source must be steering_wheel_angle or steering_tire_angle");
+}
+
+KinematicReference parse_kinematic_reference(const std::string & value)
+{
+  if (value == "legacy_center") {
+    return KinematicReference::LegacyCenter;
+  }
+  if (value == "rear_axle") {
+    return KinematicReference::RearAxle;
+  }
+  throw std::invalid_argument(
+          "kinematic_reference must be legacy_center or rear_axle");
+}
+
+double select_steering_angle(
+  SteeringAngleSource source, double steering_wheel_angle, double steering_tire_angle,
+  double maximum_steering_wheel_angle, double maximum_tire_angle)
+{
+  if (source == SteeringAngleSource::SteeringTireAngle) {
+    if (!std::isfinite(steering_tire_angle)) {
+      throw std::invalid_argument("steering tire angle must be finite");
+    }
+    return steering_tire_angle;
+  }
+
+  if (!std::isfinite(steering_wheel_angle)) {
+    throw std::invalid_argument("steering wheel angle must be finite");
+  }
+  if (!std::isfinite(maximum_steering_wheel_angle) || maximum_steering_wheel_angle <= 0.0) {
+    throw std::invalid_argument("maximum steering wheel angle must be finite and positive");
+  }
+  if (!std::isfinite(maximum_tire_angle) || maximum_tire_angle <= 0.0) {
+    throw std::invalid_argument("maximum tire angle must be finite and positive");
+  }
+  return steering_wheel_angle / maximum_steering_wheel_angle * maximum_tire_angle;
+}
+
 }  // namespace tod_projection

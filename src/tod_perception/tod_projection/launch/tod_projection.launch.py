@@ -1,7 +1,7 @@
 import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch.actions import DeclareLaunchArgument
 from ament_index_python.packages import get_package_share_directory
 
@@ -21,6 +21,13 @@ def generate_launch_description():
         default_value=default_config_path
     )
 
+    node_param_path = PathJoinSubstitution([
+        LaunchConfiguration('config_path'),
+        'package_config',
+        'tod_projection',
+        'params.yaml',
+    ])
+
     lane_projection_node = Node(
         namespace   = '/operator/projection',
         package     = 'tod_projection',
@@ -29,7 +36,8 @@ def generate_launch_description():
         output      = 'screen',
         parameters  = [
             {'vehicleID': LaunchConfiguration('vehicleID')},
-            {'config_path': LaunchConfiguration('config_path')}
+            {'config_path': LaunchConfiguration('config_path')},
+            node_param_path,
         ]
     )
 

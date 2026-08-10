@@ -10,6 +10,7 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "tod_core/param_set/VehicleParameters.hpp"
 #include "tod_helper/vehicle/Model.h"
+#include "tod_projection/rear_axle_projection.hpp"
 #include "tod_vehicle_msgs/msg/primary_vehicle_state.hpp"
 #include "tod_vehicle_msgs/msg/secondary_vehicle_state.hpp"
 #include <memory.h>
@@ -70,7 +71,12 @@ private:
   /// Default parameter for the vehicleID 
   std::string _vehicle_id{"edgar"};
   /// Variable to hold the current gear position
-  std::int8_t _gear_position;
+  std::int8_t _gear_position{eGearPosition::GEARPOSITION_PARK};
+  SteeringAngleSource _steering_angle_source{SteeringAngleSource::SteeringWheelAngle};
+  KinematicReference _kinematic_reference{KinematicReference::LegacyCenter};
+  Geometry _rear_axle_geometry{};
+  double _prediction_length_m{6.0};
+  std::size_t _prediction_steps{40};
 
   /**
    * @brief Callback to calculate and publish vehicle lane projections based on primary vehicle state.
