@@ -25,5 +25,11 @@ install(
     share/${PROJECT_NAME}
     )
 
+if(BUILD_TESTING)
+    find_package(ament_cmake_gtest REQUIRED)
+    ament_add_gtest(test_rear_axle_projection test/test_rear_axle_projection.cpp)
+    target_link_libraries(test_rear_axle_projection rear_axle_projection)
+endif()
+
 ament_export_dependencies(rclcpp nav_msgs tod_vehicle_msgs tod_helper tod_core)
 ament_package()

@@ -14,6 +14,8 @@
     <depend>tod_vehicle_msgs</depend>
     <depend>tod_helper</depend>
     <depend>tod_core</depend>
+
+    <test_depend>ament_cmake_gtest</test_depend>
     
     <export>
       <build_type>ament_cmake</build_type>
