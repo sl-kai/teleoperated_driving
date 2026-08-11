@@ -90,6 +90,10 @@ class DeploymentConfigTests(unittest.TestCase):
         self.assertIn("ARG ROS_APT_REPOSITORY", dockerfile)
         self.assertIn("${ROS_APT_REPOSITORY}", dockerfile)
         self.assertIn(
+            "ROS_APT_REPOSITORY=http://packages.ros.org/ros2/ubuntu",
+            workflow,
+        )
+        self.assertNotIn(
             "ROS_APT_REPOSITORY=https://packages.ros.org/ros2/ubuntu",
             workflow,
         )
