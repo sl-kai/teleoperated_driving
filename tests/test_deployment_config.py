@@ -81,6 +81,19 @@ class DeploymentConfigTests(unittest.TestCase):
         self.assertIn("build-essential", dockerfile)
         self.assertIn("python3-dev", dockerfile)
 
+    def test_ghcr_build_uses_official_ros_apt_repository(self):
+        dockerfile = (REPO / "docker/dockerfile").read_text(encoding="utf-8")
+        workflow = (
+            REPO / ".github/workflows/publish-images.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("ARG ROS_APT_REPOSITORY", dockerfile)
+        self.assertIn("${ROS_APT_REPOSITORY}", dockerfile)
+        self.assertIn(
+            "ROS_APT_REPOSITORY=https://packages.ros.org/ros2/ubuntu",
+            workflow,
+        )
+
     def test_xauthority_mount_uses_container_target(self):
         compose = (REPO / "docker-compose.yaml").read_text(encoding="utf-8")
 

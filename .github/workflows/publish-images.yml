@@ -105,6 +105,7 @@ jobs:
             DOCKER_UID=1000
             DOCKER_GID=1000
             DOCKER_USERNAME=tum
+            ROS_APT_REPOSITORY=https://packages.ros.org/ros2/ubuntu
             VEHICLE_BUILD_ARGS=--cmake-args -DVEHICLE=ON -DOPERATOR=OFF -DCMAKE_BUILD_TYPE=Release
             OPERATOR_BUILD_ARGS=--cmake-args -DVEHICLE=OFF -DOPERATOR=ON -DCMAKE_BUILD_TYPE=Release
           cache-from: type=gha,scope=${{ matrix.target }}-${{ matrix.arch }}

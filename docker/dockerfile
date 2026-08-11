@@ -10,6 +10,7 @@ FROM ros:${DOCKER_ROS_DISTRO}-ros-base AS tod_base
 ARG DOCKER_USERNAME
 ARG DOCKER_UID
 ARG DOCKER_GID
+ARG ROS_APT_REPOSITORY=http://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu
 
 ###--- Create an non-root dev user ---------------------------------------------###
 RUN groupadd --gid ${DOCKER_GID} ${DOCKER_USERNAME} \
@@ -41,7 +42,7 @@ RUN set -eux; \
       | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg; \
     echo "deb [arch=$(dpkg --print-architecture) \
         signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-        http://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu \
+        ${ROS_APT_REPOSITORY} \
         $(. /etc/os-release && echo $VERSION_CODENAME) main" \
       > /etc/apt/sources.list.d/ros2.list
 
