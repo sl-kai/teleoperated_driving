@@ -24,3 +24,12 @@ def test_relay_is_receive_only_and_publishes_required_topic():
 
     for forbidden in ("send(", "sendto(", "sendmsg(", "write("):
         assert forbidden not in text
+
+
+def test_relay_drains_the_nonblocking_socket_queue():
+    text = SOURCE.read_text(encoding="utf-8")
+
+    assert "SOCK_NONBLOCK" in text
+    assert "while (true)" in text
+    assert "EAGAIN" in text
+    assert "EWOULDBLOCK" in text

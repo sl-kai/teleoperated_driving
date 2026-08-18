@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <array>
+#include <cerrno>
 #include <chrono>
 #include <iomanip>
 #include <memory>
@@ -48,15 +49,23 @@ class CanFeedbackRelay : public rclcpp::Node {
     if (socket_ < 0 && !open_socket()) return;
     pollfd descriptor{socket_, POLLIN, 0};
     if (poll(&descriptor, 1, 0) <= 0 || !(descriptor.revents & POLLIN)) return;
-    can_frame frame{};
-    if (recv(socket_, &frame, sizeof(frame), 0) != sizeof(frame)) { close(socket_); socket_ = -1; return; }
-    if (!is_feedback_frame(frame)) return;
-    std_msgs::msg::String message;
-    message.data = envelope(frame, get_clock()->now().nanoseconds(), interface_);
-    publisher_->publish(message);
+    while (true) {
+      can_frame frame{};
+      const auto received = recv(socket_, &frame, sizeof(frame), 0);
+      if (received == sizeof(frame)) {
+        if (!is_feedback_frame(frame)) continue;
+        std_msgs::msg::String message;
+        message.data = envelope(frame, get_clock()->now().nanoseconds(), interface_);
+        publisher_->publish(message);
+        continue;
+      }
+      if (received < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return;
+      if (received < 0 && errno == EINTR) continue;
+      close(socket_); socket_ = -1; return;
+    }
   }
   bool open_socket() {
-    socket_ = socket(PF_CAN, SOCK_RAW | SOCK_CLOEXEC, CAN_RAW);
+    socket_ = socket(PF_CAN, SOCK_RAW | SOCK_CLOEXEC | SOCK_NONBLOCK, CAN_RAW);
     if (socket_ < 0) return false;
     std::array<can_filter, 5> filters{};
     for (size_t index = 0; index < kFeedbackIds.size(); ++index) { filters[index].can_id = kFeedbackIds[index]; filters[index].can_mask = CAN_SFF_MASK; }
