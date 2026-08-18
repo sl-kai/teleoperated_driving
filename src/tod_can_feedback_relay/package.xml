@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>tod_can_feedback_relay</name>
+  <version>0.1.0</version>
+  <description>Read-only Peanut01 SocketCAN feedback relay.</description>
+  <maintainer email="tod@example.invalid">TOD</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>
