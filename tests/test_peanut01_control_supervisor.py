@@ -100,7 +100,7 @@ def test_arming_readiness_interruption_restarts_timer():
 
 def test_stale_command_feedback_emergency_and_local_override_latch_fault():
     mutations = {
-        "stale command": {"primary_stamp_ns": 1_700_000_000},
+        "stale command": {"primary_stamp_ns": 900_000_000},
         "stale feedback": {"feedback_stamp_ns": 1_700_000_000},
         "emergency": {"emergency": True},
         "override": {"local_override": True},

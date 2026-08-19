@@ -616,7 +616,7 @@ def declare_config(source_node):
             source_node.declare_parameter("target_domain_id", 0).value
         ),
         "command_timeout_ms": int(
-            source_node.declare_parameter("command_timeout_ms", 300).value
+            source_node.declare_parameter("command_timeout_ms", 1000).value
         ),
         "feedback_timeout_ms": int(
             source_node.declare_parameter("feedback_timeout_ms", 300).value
