@@ -7,6 +7,7 @@ import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BRIDGE = ROOT / "work/peanut01_control_bridge.py"
+SUPERVISOR = ROOT / "work/peanut01_control_supervisor.py"
 PARAMS = ROOT / "config/config/package_config/tod_peanut01_interface/params.yaml"
 LAUNCH = ROOT / "src/tod_launch/launch/tod_vehicle_peanut01_video.launch.py"
 DOCKERFILE = ROOT / "docker/dockerfile"
@@ -153,7 +154,7 @@ class Peanut01ControlBridgeContractTest(unittest.TestCase):
         self.assertFalse(node["enable_actuation"])
         self.assertEqual(7, node["source_domain_id"])
         self.assertEqual(0, node["target_domain_id"])
-        self.assertEqual(300, node["command_timeout_ms"])
+        self.assertEqual(1000, node["command_timeout_ms"])
         self.assertEqual(300, node["feedback_timeout_ms"])
         self.assertEqual("/vehicle/can/raw", node["can_feedback_topic"])
         self.assertEqual(300, node["can_feedback_timeout_ms"])
@@ -163,6 +164,24 @@ class Peanut01ControlBridgeContractTest(unittest.TestCase):
         self.assertEqual(16.0, node["steering_ratio"])
         self.assertEqual(20.0, node["publish_rate_hz"])
         self.assertNotIn("max_velocity", node)
+
+    def test_command_timeout_defaults_to_one_second_everywhere(self):
+        params = yaml.safe_load(PARAMS.read_text(encoding="utf-8"))
+        shared = params["/**"]["ros__parameters"]
+        node = params["/vehicle/interface/peanut01/ControlBridge"][
+            "ros__parameters"
+        ]
+        bridge = BRIDGE.read_text(encoding="utf-8")
+        supervisor = SUPERVISOR.read_text(encoding="utf-8")
+
+        self.assertEqual(1000, shared["command_timeout_ms"])
+        self.assertEqual(1000, node["command_timeout_ms"])
+        self.assertIn(
+            'declare_parameter("command_timeout_ms", 1000)', bridge
+        )
+        self.assertIn(
+            "command_timeout_ns: int = 1_000_000_000", supervisor
+        )
 
     def test_vehicle_launch_starts_bridge_with_shared_parameters(self):
         text = LAUNCH.read_text(encoding="utf-8")
