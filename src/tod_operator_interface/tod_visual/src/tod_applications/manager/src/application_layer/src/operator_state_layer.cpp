@@ -182,6 +182,7 @@ float comboWidth = (3 * buttonWidth) + (2 * spacing);  // 3 buttons + 2 gaps bet
             isTimerActive = true;
             timerStart = std::chrono::steady_clock::now();
             currentState=IS_CONNECTING;
+            vehicle_ip_ = inputBuffer;
             tod_status_msgs::msg::ManagerButtonStatus buttonStatusMsg;
             buttonStatusMsg.operator_ip_address = ipOperatorOptions[selectedOperatorIP];
             buttonStatusMsg.vehicle_ip_address = std::string(inputBuffer);
@@ -456,7 +457,7 @@ void OperatorStateLayer::UpdateState() {
                 currentState = CONNECTED;
                 isTimerActive = false;
                 _networkMonitor.SetMonitorStatus(
-                    ipOperatorOptions[selectedOperatorIP], inputBuffer, true);
+                    ipOperatorOptions[selectedOperatorIP], vehicle_ip_, true);
             }
             break;
 
@@ -481,7 +482,7 @@ void OperatorStateLayer::UpdateState() {
                 RCLCPP_INFO(_ros->get_logger(), "Transition to DISCONNECTED");
                 currentState = DISCONNECTED;
                 _networkMonitor.SetMonitorStatus(
-                    ipOperatorOptions[selectedOperatorIP], inputBuffer, false);
+                    ipOperatorOptions[selectedOperatorIP], vehicle_ip_, false);
                 isTimerActive = false;
             }
             break;

@@ -88,6 +88,7 @@ class OperatorStateLayer : public tod_gl::OperatorManagerDockingLayer{
     private:
     std::vector<std::string> ipOperatorOptions; 
     int selectedOperatorIP = 0;
+    std::string vehicle_ip_ = "10.0.0.10";
 
 private:
   tod_gl::TodStatusComponent _status; 

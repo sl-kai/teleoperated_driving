@@ -38,12 +38,12 @@ def test_manager_starts_and_stops_both_monitors_with_directional_ips():
 
     assert re.search(
         r"_networkMonitor\.SetMonitorStatus\(\s*"
-        r"ipOperatorOptions\[selectedOperatorIP\],\s*inputBuffer,\s*true\s*\);",
+        r"ipOperatorOptions\[selectedOperatorIP\],\s*vehicle_ip_,\s*true\s*\);",
         state_layer,
     )
     assert re.search(
         r"_networkMonitor\.SetMonitorStatus\(\s*"
-        r"ipOperatorOptions\[selectedOperatorIP\],\s*inputBuffer,\s*false\s*\);",
+        r"ipOperatorOptions\[selectedOperatorIP\],\s*vehicle_ip_,\s*false\s*\);",
         state_layer,
     )
 
