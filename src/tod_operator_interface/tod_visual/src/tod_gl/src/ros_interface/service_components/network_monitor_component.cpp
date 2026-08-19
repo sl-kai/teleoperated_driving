@@ -12,6 +12,9 @@ namespace tod_gl {
 NetworkMonitorComponent::NetworkMonitorComponent(std::shared_ptr<rclcpp::Node> subNode)
     : node_(subNode)  // Store subNode in node_ member variable
 {
+    local_client_ = node_->create_client<MonitorService>(
+        "/operator/monitoring/network_monitor/set_monitoring_status");
+
     // Wait for service forwarder to start and get absolute name of set_monitoring_status
     rclcpp::sleep_for(100ms);
 
@@ -27,39 +30,56 @@ NetworkMonitorComponent::NetworkMonitorComponent(std::shared_ptr<rclcpp::Node> s
 
     // create client, if service was not found fall back to default name:
     // "/set_monitoring_status"
-    client = node_->create_client<tod_network_monitoring_msgs::srv::NetworkMonitorService>(service_name);
-    if (!client->wait_for_service(1s)) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(node_->get_logger(), "Interrupted while waiting for the service.");
-        }
-        RCLCPP_ERROR(subNode->get_logger(), "Service \"%s\" not available. Not creating a request", service_name.c_str());
-        return;
+    vehicle_client_ = node_->create_client<MonitorService>(service_name);
+    if (!local_client_->wait_for_service(1s)) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "Service \"/operator/monitoring/network_monitor/set_monitoring_status\" not available");
     }
-    RCLCPP_INFO(subNode->get_logger(), "Service \"%s\" connected.", service_name.c_str());
+    if (!vehicle_client_->wait_for_service(1s)) {
+        RCLCPP_WARN(node_->get_logger(), "Service \"%s\" not available", service_name.c_str());
+    }
 }
 
-void NetworkMonitorComponent::SetMonitorStatus(const std::string &vehicleIp, bool set_active) {
-    auto request = std::make_shared<tod_network_monitoring_msgs::srv::NetworkMonitorService::Request>();
-    request->vehicle_ip_address = vehicleIp;
+void NetworkMonitorComponent::SendRequest(
+    const MonitorClient::SharedPtr &client,
+    const std::string &target_ip,
+    bool set_active,
+    const std::string &endpoint_name) {
+    if (!client || !client->service_is_ready()) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "Latency monitor service unavailable for %s endpoint (target %s)",
+                    endpoint_name.c_str(), target_ip.c_str());
+        return;
+    }
+
+    auto request = std::make_shared<MonitorService::Request>();
+    request->vehicle_ip_address = target_ip;
     request->set_monitor_mode = set_active;
 
-            client->async_send_request(
-                request,
-                [this, set_active](rclcpp::Client<tod_network_monitoring_msgs::srv::NetworkMonitorService>::SharedFuture future) {
-                    try {
-                        auto response = future.get();
-                        if (response->is_active != set_active) {
-                            RCLCPP_ERROR(this->node_->get_logger(), "failed to change monitoring status on operator!");
-                        }
-                    } catch (const std::exception& e) {
-                        RCLCPP_ERROR(this->node_->get_logger(), "Exception caught: %s", e.what());
-                    }
+    client->async_send_request(
+        request,
+        [this, set_active, endpoint_name](MonitorClient::SharedFuture future) {
+            try {
+                auto response = future.get();
+                if (response->is_active != set_active) {
+                    RCLCPP_ERROR(this->node_->get_logger(),
+                                 "failed to change latency monitoring status on %s endpoint",
+                                 endpoint_name.c_str());
                 }
-            );
+            } catch (const std::exception &e) {
+                RCLCPP_ERROR(this->node_->get_logger(),
+                             "latency monitoring request failed on %s endpoint: %s",
+                             endpoint_name.c_str(), e.what());
+            }
+        });
+}
 
-    
-    // Capture `this` to access node_ in the lambda function
+void NetworkMonitorComponent::SetMonitorStatus(
+    const std::string &operator_ip,
+    const std::string &vehicle_ip,
+    bool set_active) {
+    SendRequest(local_client_, vehicle_ip, set_active, "operator");
+    SendRequest(vehicle_client_, operator_ip, set_active, "vehicle");
 }
 
 } // namespace tod_gl
- 

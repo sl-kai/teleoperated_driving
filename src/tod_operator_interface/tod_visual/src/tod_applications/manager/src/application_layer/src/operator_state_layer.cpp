@@ -455,7 +455,8 @@ void OperatorStateLayer::UpdateState() {
                 RCLCPP_INFO(_ros->get_logger(), "Transition to CONNECTED");
                 currentState = CONNECTED;
                 isTimerActive = false;
-                _networkMonitor.SetMonitorStatus(ipOperatorOptions[selectedOperatorIP],true);
+                _networkMonitor.SetMonitorStatus(
+                    ipOperatorOptions[selectedOperatorIP], inputBuffer, true);
             }
             break;
 
@@ -479,7 +480,8 @@ void OperatorStateLayer::UpdateState() {
             if (todStatus == 0) {
                 RCLCPP_INFO(_ros->get_logger(), "Transition to DISCONNECTED");
                 currentState = DISCONNECTED;
-                _networkMonitor.SetMonitorStatus(ipOperatorOptions[selectedOperatorIP],false);
+                _networkMonitor.SetMonitorStatus(
+                    ipOperatorOptions[selectedOperatorIP], inputBuffer, false);
                 isTimerActive = false;
             }
             break;

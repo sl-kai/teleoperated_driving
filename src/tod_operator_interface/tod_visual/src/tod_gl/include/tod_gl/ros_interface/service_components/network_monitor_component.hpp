@@ -13,11 +13,24 @@
  class NetworkMonitorComponent{
    public:
    NetworkMonitorComponent(std::shared_ptr<rclcpp::Node> subNode);
-     void SetMonitorStatus(const std::string &vehicleIp, bool set_active);
- 
+   void SetMonitorStatus(
+       const std::string &operator_ip,
+       const std::string &vehicle_ip,
+       bool set_active);
+
    private:
+   using MonitorService = tod_network_monitoring_msgs::srv::NetworkMonitorService;
+   using MonitorClient = rclcpp::Client<MonitorService>;
+
+   void SendRequest(
+       const MonitorClient::SharedPtr &client,
+       const std::string &target_ip,
+       bool set_active,
+       const std::string &endpoint_name);
+
    std::shared_ptr<rclcpp::Node> node_;
-   std::shared_ptr<rclcpp::Client<tod_network_monitoring_msgs::srv::NetworkMonitorService>> client;
+   MonitorClient::SharedPtr local_client_;
+   MonitorClient::SharedPtr vehicle_client_;
    };
  
  } // namespace tod_gl
