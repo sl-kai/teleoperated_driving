@@ -30,6 +30,11 @@ ACTUATION_STATE_COMPONENT = (
     / "include/tod_gl/ros_interface/subscribing_components/"
     "actuation_control_state_component.hpp"
 )
+ACTUATION_STATE_COMPONENT_SOURCE = (
+    TOD_GL
+    / "src/ros_interface/subscribing_components/"
+    "actuation_control_state_component.cpp"
+)
 ACTUATION_SERVICE_COMPONENT = (
     TOD_GL
     / "include/tod_gl/ros_interface/service_components/"
@@ -201,20 +206,31 @@ def test_actuation_service_and_state_remappings_are_explicit():
 
 def test_visual_state_component_owns_thread_safe_fresh_snapshot():
     header = ACTUATION_STATE_COMPONENT.read_text(encoding="utf-8")
+    source = ACTUATION_STATE_COMPONENT_SOURCE.read_text(encoding="utf-8")
     for token in (
         "ActuationControlSnapshot",
         "std::mutex",
         "std::lock_guard",
         "std::chrono::steady_clock::time_point",
-        'SubscribingComponent(sub_node, "input/actuation_control_state")',
         "ActuationControlSnapshot snapshot() const",
         "bool is_fresh",
         "std::chrono::seconds(1)",
     ):
         assert token in header
+    assert '"input/actuation_control_state"' in source
 
     visual_io = VISUAL_IO.read_text(encoding="utf-8")
     assert "add_component<tod_gl::ActuationControlStateComponent>" in visual_io
+
+
+def test_visual_state_component_remains_safe_when_entt_moves_it():
+    header = ACTUATION_STATE_COMPONENT.read_text(encoding="utf-8")
+    source = ACTUATION_STATE_COMPONENT_SOURCE.read_text(encoding="utf-8")
+
+    assert "struct SharedState" in header
+    assert "std::shared_ptr<SharedState> state_" in header
+    assert "SubscribingComponent<" not in header
+    assert "[state = state_]" in source
 
 
 def test_visual_service_component_suppresses_duplicates_and_times_out():
