@@ -279,6 +279,7 @@ FROM tod_vehicle_base AS tod_vehicle
 ###--- Copy install files from builder -----------------------------------------###
 COPY --from=tod_vehicle_builder \
      /home/${DOCKER_USERNAME}/wsp/install /home/${DOCKER_USERNAME}/wsp/install
+RUN test -x /home/${DOCKER_USERNAME}/wsp/install/tod_can_feedback_relay/lib/tod_can_feedback_relay/tod_can_feedback_relay
 
 USER root
 RUN mkdir -p /opt/tod-tools

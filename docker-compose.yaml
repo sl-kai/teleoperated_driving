@@ -191,40 +191,6 @@ services:
              vehicleID:=${VEHICLE_ID:?}
              vehicleNetworkInterface:=${VEHICLE_NETWORK_INTERFACE:?}
 
-  tod_can_feedback_relay:
-    extends: tod_base
-    image: ${TOD_CAN_FEEDBACK_RELAY_IMAGE:-tod-can-feedback-relay:local}
-    container_name: tod_can_feedback_relay_${DOCKER_TAG:?}
-    user: ${DOCKER_UID:?}:${DOCKER_UID:?}
-    entrypoint: []
-    build:
-      context: .
-      dockerfile: docker/dockerfile
-      target: tod_vehicle
-      args:
-        VEHICLE_BUILD_ARGS: ${VEHICLE_BUILD_ARGS:?}
-    network_mode: host
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_RAW
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /home/${DOCKER_USERNAME:?}/.ros
-    restart: unless-stopped
-    environment:
-      - ROS_DOMAIN_ID=0
-      - ROS_LOG_DIR=/tmp/ros-log
-    volumes:
-      - ./config/dds:/home/${DOCKER_USERNAME:?}/wsp/config/dds:ro
-    command:
-      - /home/${DOCKER_USERNAME:?}/wsp/install/tod_can_feedback_relay/lib/tod_can_feedback_relay/tod_can_feedback_relay
-      - --ros-args
-      - -p
-      - interface:=can0
-
-
   ###################################################################################
   ###--- tod_vehicle_gpu --Deployment---------------------------------------------###
   ###################################################################################

@@ -91,4 +91,16 @@ def generate_launch_description():
             respawn_delay=2.0,
         )
     )
+    description.add_action(
+        Node(
+            package="tod_can_feedback_relay",
+            executable="tod_can_feedback_relay",
+            name="tod_can_feedback_relay",
+            output="screen",
+            parameters=[{"interface": "can0"}],
+            additional_env={"ROS_DOMAIN_ID": "0"},
+            respawn=True,
+            respawn_delay=1.0,
+        )
+    )
     return description
