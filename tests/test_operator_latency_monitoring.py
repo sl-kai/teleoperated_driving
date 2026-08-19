@@ -59,3 +59,26 @@ def test_visual_keeps_using_local_operator_metrics():
         "/operator/interface/visual/input/network_metrics",
         "/operator/monitoring/output/network_metrics",
     ) in pairs
+
+
+def test_visual_network_bars_use_rtt_latency_thresholds():
+    layer = re.sub(
+        r"\s+", " ",
+        (
+            ROOT
+            / "src/tod_operator_interface/tod_visual/src/tod_applications/visual/"
+            "application_layer/include/drive_info_layer.hpp"
+        ).read_text(encoding="utf-8"),
+    )
+
+    update_body = re.search(
+        r"void update_network_bars\(\) \{(.*?)\s*private:", layer
+    )
+    assert update_body, "network bar update function not found"
+    body = update_body.group(1)
+    assert "latency_" in body
+    assert "link_quality_" not in body
+    assert re.search(r"latency_\s*<\s*50", body)
+    assert re.search(r"latency_\s*<\s*100", body)
+    assert re.search(r"latency_\s*<\s*200", body)
+    assert re.search(r"latency_\s*<\s*500", body)

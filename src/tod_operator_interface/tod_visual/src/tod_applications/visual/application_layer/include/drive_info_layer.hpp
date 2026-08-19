@@ -690,25 +690,27 @@ class DriveInfoLayer : public UILayer {
             latency_ = comp.get_latency();
         }
     }
-        /**
-     * @brief Updates the number of network bars based on link quality.
+    /**
+     * @brief Updates the number of network bars from the displayed RTT.
+     *
+     * The bars and the latency text intentionally use the same metric so
+     * that the visual status cannot disagree with the numeric RTT value.
      */
 
     void update_network_bars() {
-        // TODO: Meaningful values ? were chosen arbitrary
-        if (link_quality_ > 0.95) {
+        if (!(latency_ > 0.0)) {
+            networkBars_ = 0;
+        } else if (latency_ < 50.0) {
             networkBars_ = 4;
-        } else if (link_quality_ > 0.9) {
+        } else if (latency_ < 100.0) {
             networkBars_ = 3;
-        } else if (link_quality_ > 0.80) {
+        } else if (latency_ < 200.0) {
             networkBars_ = 2;
-        } else if (link_quality_ > 0.70) {
+        } else if (latency_ < 500.0) {
             networkBars_ = 1;
-        } else if (link_quality_ > 0.69) {
-            networkBars_ = 5;  // one bar in red
         } else {
             networkBars_ = 0;
-}
+        }
     }
 
   private:
