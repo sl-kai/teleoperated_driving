@@ -24,6 +24,26 @@ VEHICLE_DATA_CONFIG = (
     ROOT / "config/config/package_config/tod_data_interface/vehicle_config.yaml"
 )
 REMAPPINGS = ROOT / "config/config/remappings.yaml"
+TOD_GL = ROOT / "src/tod_operator_interface/tod_visual/src/tod_gl"
+ACTUATION_STATE_COMPONENT = (
+    TOD_GL
+    / "include/tod_gl/ros_interface/subscribing_components/"
+    "actuation_control_state_component.hpp"
+)
+ACTUATION_SERVICE_COMPONENT = (
+    TOD_GL
+    / "include/tod_gl/ros_interface/service_components/"
+    "actuation_control_component.hpp"
+)
+ACTUATION_SERVICE_SOURCE = (
+    TOD_GL
+    / "src/ros_interface/service_components/actuation_control_component.cpp"
+)
+VISUAL_IO = (
+    ROOT
+    / "src/tod_operator_interface/tod_visual/src/tod_applications/visual/"
+    "application_layer/src/visual_io_layer.cpp"
+)
 
 
 def test_generated_actuation_interfaces_are_registered():
@@ -167,3 +187,39 @@ def test_actuation_service_and_state_remappings_are_explicit():
         "/operator/interface/visual/input/actuation_control_state",
         "/operator/network/data/from_vehicle/actuation_control_state",
     ) in visual_pairs
+
+
+def test_visual_state_component_owns_thread_safe_fresh_snapshot():
+    header = ACTUATION_STATE_COMPONENT.read_text(encoding="utf-8")
+    for token in (
+        "ActuationControlSnapshot",
+        "std::mutex",
+        "std::lock_guard",
+        "std::chrono::steady_clock::time_point",
+        'SubscribingComponent(sub_node, "input/actuation_control_state")',
+        "ActuationControlSnapshot snapshot() const",
+        "bool is_fresh",
+        "std::chrono::seconds(1)",
+    ):
+        assert token in header
+
+    visual_io = VISUAL_IO.read_text(encoding="utf-8")
+    assert "add_component<tod_gl::ActuationControlStateComponent>" in visual_io
+
+
+def test_visual_service_component_suppresses_duplicates_and_times_out():
+    header = ACTUATION_SERVICE_COMPONENT.read_text(encoding="utf-8")
+    source = ACTUATION_SERVICE_SOURCE.read_text(encoding="utf-8")
+    combined = header + source
+    for token in (
+        "/operator/network/config/to_vehicle/set_actuation_enabled",
+        "bool request(bool enable)",
+        "void update()",
+        "pending_",
+        "request_id_",
+        "std::chrono::seconds(2)",
+        "service_is_ready()",
+        "accepted",
+    ):
+        assert token in combined
+    assert "if (pending_)" in source

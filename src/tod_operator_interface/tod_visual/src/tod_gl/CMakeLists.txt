@@ -38,6 +38,7 @@ set(TOD_GL_SOURCES
     ## subscribing
     src/ros_interface/ros_interface.cpp
     src/ros_interface/subscribing_components/automation_status_component.cpp
+    src/ros_interface/subscribing_components/actuation_control_state_component.cpp
     src/ros_interface/subscribing_components/point_cloud_component.cpp
     src/ros_interface/subscribing_components/driving_lane_component.cpp
     src/ros_interface/subscribing_components/image_component.cpp
@@ -62,6 +63,7 @@ set(TOD_GL_SOURCES
     src/ros_interface/service_components/video_config_component.cpp
     src/ros_interface/service_components/input_device_component.cpp
     src/ros_interface/service_components/network_monitor_component.cpp
+    src/ros_interface/service_components/actuation_control_component.cpp
     # scene
     src/scene/scene.cpp
     src/scene/scene_serialization.cpp

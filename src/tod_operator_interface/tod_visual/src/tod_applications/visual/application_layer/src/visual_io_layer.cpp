@@ -19,6 +19,7 @@
 #include "tod_gl/ros_interface/subscribing_components/secondary_control_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/tod_status_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/automation_status_component.hpp"
+#include "tod_gl/ros_interface/subscribing_components/actuation_control_state_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/trajectory_guidance_state_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/primary_vehicle_state_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/secondary_vehicle_state_component.hpp"
@@ -62,6 +63,7 @@ void VisualIOLayer::on_attach() {
     SubscriptionManager.add_component<tod_gl::SecondaryControlCommandComponent>(_ros);
     SubscriptionManager.add_component<tod_gl::TodStatusComponent>(_ros);
     SubscriptionManager.add_component<tod_gl::AutomationStatusComponent>(_ros);
+    SubscriptionManager.add_component<tod_gl::ActuationControlStateComponent>(_ros);
     SubscriptionManager.add_component<tod_gl::PrimaryVehicleStateComponent>(_ros);
     SubscriptionManager.add_component<tod_gl::SecondaryVehicleStateComponent>(_ros);
     SubscriptionManager.add_component<tod_gl::JoyStickComponent>(_ros);
