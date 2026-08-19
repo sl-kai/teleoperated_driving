@@ -717,6 +717,14 @@ class DriveInfoLayer : public UILayer {
 
         tod_gl::Entity subscription_manager = _active_scene->find_entity_with_tag("SubscriptionManager");
 
+        actuation_state_fresh_ = false;
+        if (subscription_manager.has_component<ActuationControlStateComp>()) {
+            ActuationControlStateComp &comp =
+                subscription_manager.get_component<ActuationControlStateComp>();
+            actuation_snapshot_ = comp.snapshot();
+            actuation_state_fresh_ = comp.is_fresh();
+        }
+
         if (subscription_manager.has_component<PrimaryControlComp>()) {
             PrimaryControlComp &comp = subscription_manager.get_component<PrimaryControlComp>();
             speed_ = 3.6f * comp.get_velocity();
@@ -822,13 +830,6 @@ class DriveInfoLayer : public UILayer {
             networkBars_ = 0;
         }
 
-        actuation_state_fresh_ = false;
-        if (subscription_manager.has_component<ActuationControlStateComp>()) {
-            ActuationControlStateComp &comp =
-                subscription_manager.get_component<ActuationControlStateComp>();
-            actuation_snapshot_ = comp.snapshot();
-            actuation_state_fresh_ = comp.is_fresh();
-        }
     }
 
   private:
