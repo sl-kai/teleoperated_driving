@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+
 #include "ui_layer.hpp"
 #include "view_port_layer.hpp"
 
@@ -18,6 +21,8 @@
 #include "tod_gl/ros_interface/subscribing_components/secondary_control_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/tod_status_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/automation_status_component.hpp"
+#include "tod_gl/ros_interface/subscribing_components/actuation_control_state_component.hpp"
+#include "tod_gl/ros_interface/service_components/actuation_control_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/primary_vehicle_state_component.hpp"
 #include "tod_gl/ros_interface/subscribing_components/secondary_vehicle_state_component.hpp"
 #include "tod_gl/scene/camera_controller.hpp"
@@ -30,7 +35,7 @@
 
 namespace tod_visual {
 // TODO: What about this templating here? Does that do anything for us?
-template <class PrimaryVehicleStateComp, class SecondaryVehicleStateComp, class ToDStatusComponent, class AutomationStatusComponent, class NetworkMetricsComponent, class JoyStickComp, class PrimaryControlComp, class SecondaryControlComp>
+template <class PrimaryVehicleStateComp, class SecondaryVehicleStateComp, class ToDStatusComponent, class AutomationStatusComponent, class ActuationControlStateComp, class NetworkMetricsComponent, class JoyStickComp, class PrimaryControlComp, class SecondaryControlComp>
 
 /**
  * @class DriveInfoLayer
@@ -39,6 +44,7 @@ template <class PrimaryVehicleStateComp, class SecondaryVehicleStateComp, class 
  * @tparam SecondaryVehicleStateComp The secondary vehicle state component type.
  * @tparam ToDStatusComponent        The component type to retrieve ToD status.
  * @tparam AutomationStatusComponent The component type to retrieve automation status.
+ * @tparam ActuationControlStateComp The component type for confirmed actuation state.
  * @tparam NetworkMetricsComponent   The component type to retrieve network metrics.
  * @tparam JoyStickComp              The component type to retrieve joystick state.
  * @tparam PrimaryControlComp        The component type to retrieve primary control commands.
@@ -55,7 +61,7 @@ class DriveInfoLayer : public UILayer {
      */
     DriveInfoLayer(std::shared_ptr<tod_gl::RosInterface> ros, std::shared_ptr<tod_gl::Scene> scene,
                    ViewPortLayer *view_port_layer)
-        : UILayer(ros, scene, view_port_layer) {
+        : UILayer(ros, scene, view_port_layer), actuation_control_(ros) {
         _name = "DriveInfoLayer";
     }
         /**
@@ -312,6 +318,8 @@ class DriveInfoLayer : public UILayer {
         ImVec2 light_pos = ImVec2(available_width * 0.715f, (available_height - interactiveButtons_.y) * 0.6f);
         ImVec2 microphone_pos = ImVec2(available_width * 0.32f, (available_height - interactiveButtons_.y) * 0.65f);
         ImVec2 start_pos = ImVec2(available_width * 0.085f, (available_height - interactiveButtons_.y) * 0.9f);
+
+        render_actuation_control(available_height);
 
         ImVec2 speed_buttons_pos = ImVec2(available_width * 0.56f, (available_height - interactiveButtons_.y) * 0.5f);
 
@@ -589,6 +597,107 @@ class DriveInfoLayer : public UILayer {
         draw_list->AddRect(border_pos, ImVec2(border_pos.x + border_size.x, border_pos.y + border_size.y),
                            IM_COL32(255, 255, 255, 255), 10.0f, 0, 3.0f);
     }
+
+    void render_actuation_control(float available_height) {
+        using ActuationState = tod_vehicle_msgs::msg::ActuationControlState;
+        constexpr float ACTUATION_HOLD_SECONDS = 2.0f;
+        const ImVec2 button_size = ImVec2(48.0f, 48.0f);
+        const ImVec2 button_pos =
+            ImVec2(24.0f, available_height - button_size.y - 12.0f);
+        const bool valid_state =
+            actuation_state_fresh_ &&
+            actuation_snapshot_.state <= ActuationState::FAULT;
+        const uint8_t state = actuation_snapshot_.state;
+        const bool pending = actuation_control_.pending();
+
+        const char *state_text = "NO DATA";
+        ImVec4 state_color(0.45f, 0.48f, 0.52f, 1.0f);
+        if (valid_state && state == ActuationState::DISABLED) {
+            state_text = "DISABLED";
+        } else if (valid_state && state == ActuationState::ARMING) {
+            state_text = "ARMING";
+            state_color = ImVec4(0.95f, 0.68f, 0.16f, 1.0f);
+        } else if (valid_state && state == ActuationState::ACTIVE) {
+            state_text = "ACTIVE";
+            state_color = ImVec4(0.14f, 0.59f, 0.75f, 1.0f);
+        } else if (valid_state && state == ActuationState::FAULT) {
+            state_text = "FAULT";
+            state_color = ImVec4(0.90f, 0.20f, 0.22f, 1.0f);
+        }
+
+        if (valid_state &&
+            (state == ActuationState::ARMING || state == ActuationState::FAULT)) {
+            const float pulse = 0.72f + 0.28f *
+                std::sin(static_cast<float>(ImGui::GetTime()) * 5.0f);
+            state_color.w = pulse;
+        }
+
+        ImGui::SetCursorPos(button_pos);
+        ImGui::InvisibleButton("##actuation_control", button_size);
+        const bool item_active = ImGui::IsItemActive();
+        const bool item_clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+        ImGuiIO &io = ImGui::GetIO();
+
+        const bool hold_state = valid_state && !pending &&
+            (state == ActuationState::DISABLED || state == ActuationState::FAULT);
+        float hold_progress = 0.0f;
+        if (hold_state && item_active && io.MouseDownDuration[0] >= 0.0f) {
+            hold_progress = std::min(
+                io.MouseDownDuration[0] / ACTUATION_HOLD_SECONDS, 1.0f);
+            if (hold_progress >= 1.0f && !actuation_hold_triggered_) {
+                if (state == ActuationState::DISABLED) {
+                    actuation_control_.request(true);
+                } else if (state == ActuationState::FAULT) {
+                    actuation_control_.request(false);
+                }
+                actuation_hold_triggered_ = true;
+            }
+        }
+        if (!io.MouseDown[0]) {
+            actuation_hold_triggered_ = false;
+        }
+
+        if (valid_state && !pending && item_clicked &&
+            (state == ActuationState::ARMING || state == ActuationState::ACTIVE)) {
+            actuation_control_.request(false);
+        }
+
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        const ImVec2 rect_min = ImGui::GetItemRectMin();
+        const ImVec2 rect_max = ImGui::GetItemRectMax();
+        const ImVec2 center(
+            (rect_min.x + rect_max.x) * 0.5f,
+            (rect_min.y + rect_max.y) * 0.5f);
+        const ImU32 color = ImGui::ColorConvertFloat4ToU32(state_color);
+        draw_list->AddCircleFilled(center, 23.0f, IM_COL32(18, 24, 30, 220));
+        draw_list->AddCircle(center, 23.0f, color, 32, 2.0f);
+        draw_list->PathArcTo(center, 12.0f, -IM_PI * 0.75f, IM_PI * 0.75f, 28);
+        draw_list->PathStroke(color, false, 3.5f);
+        draw_list->AddLine(
+            ImVec2(center.x, center.y - 15.0f),
+            ImVec2(center.x, center.y - 2.0f), color, 3.5f);
+        if (hold_progress > 0.0f) {
+            draw_list->PathArcTo(
+                center, 27.0f, -IM_PI * 0.5f,
+                -IM_PI * 0.5f + 2.0f * IM_PI * hold_progress, 32);
+            draw_list->PathStroke(color, false, 3.0f);
+        }
+
+        ImGui::SetCursorScreenPos(ImVec2(rect_max.x + 12.0f, rect_min.y + 3.0f));
+        ImGui::TextColored(state_color, "%s", state_text);
+        std::string detail;
+        if (pending) {
+            detail = "REQUESTING";
+        } else if (!actuation_control_.last_error().empty()) {
+            detail = actuation_control_.last_error();
+        } else if (valid_state && state == ActuationState::FAULT) {
+            detail = actuation_snapshot_.reason;
+        }
+        if (!detail.empty()) {
+            ImGui::SetCursorScreenPos(ImVec2(rect_max.x + 12.0f, rect_min.y + 25.0f));
+            ImGui::TextUnformatted(detail.c_str());
+        }
+    }
     /**
      * @brief Called upon attaching the layer to the application.
      */
@@ -598,6 +707,7 @@ class DriveInfoLayer : public UILayer {
      * @param ts The timestep since the last update.
      */
     virtual void on_update(float ts) override {
+        actuation_control_.update();
         update_network_bars();
 
         blinkTimer_ += ts;
@@ -711,9 +821,22 @@ class DriveInfoLayer : public UILayer {
         } else {
             networkBars_ = 0;
         }
+
+        actuation_state_fresh_ = false;
+        if (subscription_manager.has_component<ActuationControlStateComp>()) {
+            ActuationControlStateComp &comp =
+                subscription_manager.get_component<ActuationControlStateComp>();
+            actuation_snapshot_ = comp.snapshot();
+            actuation_state_fresh_ = comp.is_fresh();
+        }
     }
 
   private:
+
+    tod_gl::ActuationControlComponent actuation_control_;
+    tod_gl::ActuationControlSnapshot actuation_snapshot_;
+    bool actuation_state_fresh_{false};
+    bool actuation_hold_triggered_{false};
 
     // TODO: Find a solution for Publisher to get the into the ros_interface and being able to access them in a scene and without
     rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr change_drive_info_ =

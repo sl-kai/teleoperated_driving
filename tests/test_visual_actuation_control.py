@@ -44,6 +44,16 @@ VISUAL_IO = (
     / "src/tod_operator_interface/tod_visual/src/tod_applications/visual/"
     "application_layer/src/visual_io_layer.cpp"
 )
+DRIVE_INFO = (
+    ROOT
+    / "src/tod_operator_interface/tod_visual/src/tod_applications/visual/"
+    "application_layer/include/drive_info_layer.hpp"
+)
+VISUAL_NODE = (
+    ROOT
+    / "src/tod_operator_interface/tod_visual/src/tod_applications/visual/"
+    "visual_node.cpp"
+)
 
 
 def test_generated_actuation_interfaces_are_registered():
@@ -223,3 +233,38 @@ def test_visual_service_component_suppresses_duplicates_and_times_out():
     ):
         assert token in combined
     assert "if (pending_)" in source
+
+
+def test_drive_info_renders_fixed_lower_left_actuation_control():
+    layer = DRIVE_INFO.read_text(encoding="utf-8")
+    for token in (
+        "render_actuation_control",
+        "ImVec2(48.0f, 48.0f)",
+        "ImVec2(24.0f, available_height - button_size.y - 12.0f)",
+        "InvisibleButton(\"##actuation_control\"",
+        "PathArcTo",
+        "ACTUATION_HOLD_SECONDS = 2.0f",
+        "MouseDownDuration[0]",
+        '"DISABLED"',
+        '"ARMING"',
+        '"ACTIVE"',
+        '"FAULT"',
+        '"NO DATA"',
+    ):
+        assert token in layer
+
+
+def test_drive_info_uses_confirmed_fresh_state_for_request_semantics():
+    layer = DRIVE_INFO.read_text(encoding="utf-8")
+    assert "ActuationControlStateComp" in layer
+    assert "actuation_state_fresh_ = comp.is_fresh()" in layer
+    assert "actuation_control_.pending()" in layer
+    assert "actuation_control_.request(true)" in layer
+    assert layer.count("actuation_control_.request(false)") >= 2
+    assert "state == ActuationState::DISABLED" in layer
+    assert "state == ActuationState::FAULT" in layer
+    assert "state == ActuationState::ARMING" in layer
+    assert "state == ActuationState::ACTIVE" in layer
+
+    node = VISUAL_NODE.read_text(encoding="utf-8")
+    assert "tod_gl::ActuationControlStateComponent" in node

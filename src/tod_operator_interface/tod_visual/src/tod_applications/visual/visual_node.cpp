@@ -50,6 +50,7 @@ class VisualApplicationNode : public tod_gl::SceneApplication {
                                        tod_gl::SecondaryVehicleStateComponent,
                                        tod_gl::TodStatusComponent, 
                                        tod_gl::AutomationStatusComponent,
+                                       tod_gl::ActuationControlStateComponent,
                                        tod_gl::NetworkMetricsComponent, 
                                        tod_gl::JoyStickComponent, 
                                        tod_gl::PrimaryControlCommandComponent,
