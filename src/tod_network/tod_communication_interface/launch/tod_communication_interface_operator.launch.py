@@ -56,6 +56,15 @@ def generate_launch_description() -> LaunchDescription:
                     arguments= [value['service_operator'], value['protocol'], str(value['forwarder_port']), str(value['listener_port'])],
                     output = 'screen'
                 ))
+            elif key == "ActuationControlService":
+                nodes.append(Node(
+                    package = 'tod_communication_interface',
+                    executable = 'ActuationControlServiceForwarder',
+                    name = 'ActuationControlServiceForwarder',
+                    namespace="/operator/network/config",
+                    arguments= [value['service_operator'], value['protocol'], str(value['forwarder_port']), str(value['listener_port'])],
+                    output = 'screen'
+                ))
             elif key == "VideoParamService":
                 print("VideoParamService")
                 nodes.append(Node(

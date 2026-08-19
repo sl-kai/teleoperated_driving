@@ -113,3 +113,11 @@ senders:
     ip: "127.0.0.1"
     port: 60011
     sending_control_modes: [0, 1, 2, 3, 4, 5]
+  - name: ActuationControlStateSender
+    protocol_strategy: "udp"
+    topic: "to_operator/actuation_control_state"
+    topic_type: "tod_vehicle_msgs/msg/ActuationControlState"
+    ip: "127.0.0.1"
+    port: 60012
+    send_always: True
+    sending_control_modes: [0, 1, 2, 3, 4, 5, 99]

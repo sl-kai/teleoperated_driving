@@ -110,3 +110,9 @@ receivers:
     topic_type: "tod_trajectory_guidance_msgs/msg/Trajectory"
     port: 60011
     sending_control_modes: [0, 1, 2, 3, 4, 5]
+  - name: ActuationControlStateReceiver
+    protocol_strategy: "udp"
+    topic: "from_vehicle/actuation_control_state"
+    topic_type: "tod_vehicle_msgs/msg/ActuationControlState"
+    port: 60012
+    sending_control_modes: [0, 1, 2, 3, 4, 5, 99]

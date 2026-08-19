@@ -13,6 +13,13 @@ services:
     forwarder_port: 60400
     listener_port: 60401
 
+  ActuationControlService:
+    protocol: TCP
+    service_vehicle: from_operator/set_actuation_enabled
+    service_operator: to_vehicle/set_actuation_enabled
+    forwarder_port: 60500
+    listener_port: 60501
+
   # VideoParamService:
   #   protocol: TCP
   #   service_vehicle: from_operator/video_param_service

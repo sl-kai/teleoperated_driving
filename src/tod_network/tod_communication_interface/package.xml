@@ -13,6 +13,7 @@
   <depend>rclcpp</depend>
   <depend>tod_network_monitoring_msgs</depend>
   <depend>tod_config_msgs</depend>
+  <depend>tod_vehicle_msgs</depend>
   <depend>tod_network</depend>
   <depend>tod_network_protocols</depend>
   <depend>tod_network_monitoring</depend>

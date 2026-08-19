@@ -98,6 +98,8 @@ tod_lidar:
 
 tod_data_interface:
   # vehicle
+  - from: /vehicle/network/data/to_operator/actuation_control_state
+    to: /vehicle/interface/peanut01/actuation_control_state
   - from: /vehicle/network/data/to_operator/automation_state
     to: /vehicle/interface/automation/from_automation/automation_state
   - from: /vehicle/network/data/to_operator/fix
@@ -128,6 +130,8 @@ tod_communication_interface:
     to: /vehicle/monitoring/packet_logger/set_capture_status
   - from: /vehicle/network/config/from_operator/set_monitoring_status
     to: /vehicle/monitoring/network_monitor/set_monitoring_status
+  - from: /vehicle/network/config/from_operator/set_actuation_enabled
+    to: /vehicle/interface/peanut01/ControlBridge/set_actuation_enabled
   # operator
   - from: /operator/network/config/input/operator_status
     to: /operator/statemachine/output/operator_status
@@ -176,6 +180,9 @@ tod_visual:
   ### automation status
   - from: /operator/interface/visual/input/automation_status
     to: /operator/network/data/from_vehicle/automation_status
+  ### real actuation status
+  - from: /operator/interface/visual/input/actuation_control_state
+    to: /operator/network/data/from_vehicle/actuation_control_state
   ### vehicle state
   - from: /operator/interface/visual/input/primary_vehicle_state
     to: /operator/network/data/from_vehicle/primary_vehicle_state

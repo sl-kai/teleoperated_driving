@@ -18,6 +18,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tod_network_monitoring_msgs REQUIRED)
 find_package(tod_config_msgs REQUIRED)
+find_package(tod_vehicle_msgs REQUIRED)
 find_package(tod_network_protocols REQUIRED)
 find_package(tod_network REQUIRED)
 find_package(rcl_interfaces REQUIRED)
@@ -44,5 +45,5 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
-ament_export_dependencies(rclcpp sensor_msgs network_monitoring_msgs tod_config_msgs tod_network) 
+ament_export_dependencies(rclcpp sensor_msgs network_monitoring_msgs tod_config_msgs tod_vehicle_msgs tod_network)
 ament_package()
