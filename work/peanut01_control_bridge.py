@@ -27,10 +27,12 @@ from rclpy.parameter import Parameter
 from std_msgs.msg import Bool, String
 from tod_status_msgs.msg import Status
 from tod_vehicle_msgs.msg import (
+    ActuationControlState,
     PrimaryControlCmd,
     SafetyDriverStatus,
     SecondaryControlCmd,
 )
+from tod_vehicle_msgs.srv import SetActuationEnabled
 
 
 PRIMARY_TOPIC = "/vehicle/safety/output/primary_control_cmd"
@@ -50,6 +52,7 @@ DEBUG_GEAR_TOPIC = "/debug/tod_peanut01/autoware_gear_cmd"
 DEBUG_TURN_TOPIC = "/debug/tod_peanut01/autoware_turn_indicators_cmd"
 DEBUG_HAZARD_TOPIC = "/debug/tod_peanut01/autoware_hazard_lights_cmd"
 DIAGNOSTICS_TOPIC = "/debug/tod_peanut01/bridge_diagnostics"
+ACTUATION_STATE_TOPIC = "/vehicle/interface/peanut01/actuation_control_state"
 
 REAL_CONTROL_TOPIC = "/control/command/control_cmd"
 REAL_GEAR_TOPIC = "/control/command/gear_cmd"
@@ -84,12 +87,21 @@ class SharedInputs:
             "override": 0,
         }
         self.requested_enable = False
+        self.actuation_state = ActuationControlState.DISABLED
+        self.actuation_reason = "actuation disabled"
 
     def feedback_stamp_ns(self):
         return min(self.feedback_stamps.values())
 
 
 class Peanut01ControlBridge:
+    STATE_TO_MESSAGE = {
+        State.DISABLED: ActuationControlState.DISABLED,
+        State.ARMING: ActuationControlState.ARMING,
+        State.ACTIVE: ActuationControlState.ACTIVE,
+        State.FAULT: ActuationControlState.FAULT,
+    }
+
     def __init__(self, source_node, target_node, shared, config):
         self.source_node = source_node
         self.target_node = target_node
@@ -132,6 +144,14 @@ class Peanut01ControlBridge:
         }
         self.diagnostics_publisher = target_node.create_publisher(
             DiagnosticArray, DIAGNOSTICS_TOPIC, 10
+        )
+        self.actuation_state_publisher = source_node.create_publisher(
+            ActuationControlState, ACTUATION_STATE_TOPIC, 10
+        )
+        self.actuation_service = source_node.create_service(
+            SetActuationEnabled,
+            "set_actuation_enabled",
+            self.on_set_actuation_enabled,
         )
         self.safety_status_publisher = self.source_node.create_publisher(
             SafetyDriverStatus, SAFETY_STATUS_TOPIC, 10
@@ -224,6 +244,25 @@ class Peanut01ControlBridge:
     def on_can_feedback(self, message):
         with self.shared.lock:
             self.can_feedback.update_json(message.data, receipt_time_ns())
+
+    def on_set_actuation_enabled(self, request, response):
+        with self.shared.lock:
+            self.shared.requested_enable = request.enable
+            response.accepted = True
+            response.current_state = self.shared.actuation_state
+            response.reason = self.shared.actuation_reason
+        return response
+
+    def _publish_actuation_state(self, reason):
+        message = ActuationControlState()
+        message.header.stamp = self.source_node.get_clock().now().to_msg()
+        message.state = self.STATE_TO_MESSAGE[self.supervisor.state]
+        with self.shared.lock:
+            message.enable_requested = self.shared.requested_enable
+            message.reason = reason
+            self.shared.actuation_state = message.state
+            self.shared.actuation_reason = reason
+        self.actuation_state_publisher.publish(message)
 
     def create_real_publishers(self):
         if self._real_publishers is not None:
@@ -451,6 +490,7 @@ class Peanut01ControlBridge:
     def _publish_diagnostics(
         self, reason, unsupported, feedback, feedback_ages, snapshot, now_ns
     ):
+        self._publish_actuation_state(reason)
         message = DiagnosticArray()
         message.header.stamp = self.target_node.get_clock().now().to_msg()
         status = DiagnosticStatus()
