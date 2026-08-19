@@ -12,6 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(msg_files
+    "msg/ActuationControlState.msg"
     "msg/CompressedPointCloud.msg"
     "msg/PrimaryControlCmd.msg"
     "msg/PrimaryVehicleState.msg"
@@ -19,6 +20,7 @@ set(msg_files
     "msg/SecondaryControlCmd.msg"
     "msg/SecondaryVehicleState.msg"
     "msg/VideoInfo.msg"
+    "srv/SetActuationEnabled.srv"
     )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
