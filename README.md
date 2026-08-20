@@ -7,11 +7,10 @@
 
 ## 本 Fork 的修改
 
-- 支持 Logitech G923，并在操作端启动前自动设置 80% 回正力。
+- 支持 Logitech G923，并在操作端启动前自动设置回正力。
 - 支持 Peanut01 的控制、车辆状态、三路相机视频和主雷达点云。
 - 支持基于实测轮胎角和后轴运动学模型的前后轮轨迹显示。
 - 网卡、ROS Domain ID、车辆 ID 和传感器 Domain ID 均可配置。
-- 操作端和车端程序已构建进正式镜像，不依赖源码、work 或 overlay 挂载。
 
 ## 镜像
 
@@ -66,6 +65,8 @@ Peanut01 的视频、雷达、轨迹和车辆接口配置位于
 
 ## 全新机器部署
 
+在操作端宿主机安装并绑定支持 G923 的 Linux 方向盘驱动，例如兼容 G923 的 new-lg4ff。
+
 在每台设备上安装 Docker Engine、Compose 插件和 Git，并确认版本：
 
 ```bash
@@ -94,7 +95,6 @@ cd ~/teleoperated_driving
 ```bash
 docker compose up -d tod_vehicle
 docker compose ps
-docker compose logs --tail 100 tod_vehicle
 docker compose stop tod_vehicle
 ```
 
@@ -103,7 +103,6 @@ docker compose stop tod_vehicle
 ```bash
 docker compose up -d tod_operator
 docker compose ps
-docker compose logs --tail 100 tod_operator
 docker compose stop tod_operator
 ```
 
@@ -150,6 +149,18 @@ ros2 topic hz /operator/input_devices/output/joystick
 '
 ```
 
+## 挡位与换挡
+
+操作端支持三个挡位：
+
+| 挡位 | 数值 | 含义 |
+| --- | ---: | --- |
+| R | 1 | 倒挡 |
+| N | 2 | 空挡，也是默认挡位 |
+| D | 3 | 前进挡 |
+
+G923 使用两个拨片执行升挡和降挡。只有车辆接近静止时才允许换挡。
+
 ## 更新部署
 
 拉取并标记新镜像后，只重建对应服务：
@@ -183,7 +194,11 @@ source /opt/ros/humble/setup.bash
 source /home/tum/wsp/install/setup.bash
 ros2 topic echo <TOPIC>
 '
+```
 
+例如：
+
+```bash
 docker compose exec -T tod_vehicle bash -c '
 source /opt/ros/humble/setup.bash
 source /home/tum/wsp/install/setup.bash
@@ -220,19 +235,17 @@ ros2 topic echo /debug/tod_peanut01/autoware_control_cmd
 '
 ```
 
-`DryRunInterface` 的调试输出不代表命令已经发送到底盘。只有真实控制桥处于
-`ACTIVE`，并且真实控制话题存在发布者时，才会向底盘接口发布命令。
+## 启动控制
 
-## 真实控制安全检查
+默认为 `DISABLED` 关闭状态。启用前必须确认车辆处于软件 N 挡、踏板完全松开、车辆周围无人。启动后进入 `ARMING` 等待安全条件；在 N 挡等待一秒且反馈信息正常后，进入 `ACTIVE` 激活状态。故障进入 `FAULT` 后，先关闭真实控制并排除急停、许可、命令超时、反馈超时、本地接管和底盘执行反馈不一致等原因，再重新启用。
 
-默认情况下真实控制关闭。启用前必须确认车辆处于软件 N 挡、踏板完全松开、
-车辆周围无人且急停可用：
+启动控制（或长按左下角按钮）：
 
 ```bash
 docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=7 && ros2 param set /vehicle/interface/peanut01/ControlBridge enable_actuation true"
 ```
 
-关闭真实控制：
+关闭控制（或点按左下角按钮）：
 
 ```bash
 docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=7 && ros2 param set /vehicle/interface/peanut01/ControlBridge enable_actuation false"
@@ -247,44 +260,7 @@ docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash &
 ```
 
 状态含义：`DISABLED` 为关闭，`ARMING` 为等待安全条件，`ACTIVE` 为已激活，
-`FAULT` 为安全故障锁存。`ACTIVE` 时以下四个真实控制话题的发布者数量应为 `1`；
-`DISABLED` 或 `FAULT` 时应为 `0`：
-
-```bash
-docker compose exec -T tod_vehicle bash -lc '
-source /opt/ros/humble/setup.bash
-source /home/tum/wsp/install/setup.bash
-export ROS_DOMAIN_ID=0
-ros2 topic info /control/command/control_cmd
-ros2 topic info /control/command/gear_cmd
-ros2 topic info /control/command/turn_indicators_cmd
-ros2 topic info /control/command/hazard_lights_cmd
-'
-```
-
-故障进入 `FAULT` 后，先关闭真实控制并排除急停、许可、命令超时、反馈超时、
-本地接管和底盘执行反馈不一致等原因，再重新启用：
-
-```bash
-docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=7 && ros2 param set /vehicle/interface/peanut01/ControlBridge enable_actuation false"
-```
-
-## 构建与发布
-
-需要从源码本地构建时：
-
-```bash
-./setup_repos.sh
-docker compose build tod_vehicle tod_operator
-```
-
-推送 `ros2` 分支会发布 `edge`。推送 `v1.0.0` 格式的 Git 标签会发布
-`1.0.0` 和 `latest`：
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+`FAULT` 为安全故障锁存。
 
 ## 上游与许可证
 
