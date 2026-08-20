@@ -207,13 +207,13 @@ class DriveInfoLayer : public UILayer {
 
         // Current speed + unit
         char velocity_text[32];
-        sprintf(velocity_text, "%d", (int)(speed_));
+        sprintf(velocity_text, "%.1f", speed_);
         ImGui::PushFont(DriveInfoFontBig_);
         ImVec2 speed_size = ImGui::CalcTextSize(velocity_text);
         ImGui::PopFont();
 
         ImGui::PushFont(DriveInfoFont_);
-        ImVec2 unit_size = ImGui::CalcTextSize("km/h");
+        ImVec2 unit_size = ImGui::CalcTextSize("m/s");
         ImGui::PopFont();
 
         float text_total_height = speed_size.y + unit_size.y;
@@ -227,7 +227,7 @@ class DriveInfoLayer : public UILayer {
 
         ImGui::SetCursorPos(ImVec2(start_x + (speed_size.x - unit_size.x) * 0.5f, start_y + speed_size.y * 0.75f));
         ImGui::PushFont(DriveInfoFont_);
-        ImGui::Text("km/h");
+        ImGui::Text("m/s");
         ImGui::PopFont();
 
         float speed_control_y = start_y + speed_size.y;
@@ -726,9 +726,10 @@ class DriveInfoLayer : public UILayer {
             actuation_state_fresh_ = comp.is_fresh();
         }
 
-        if (subscription_manager.has_component<PrimaryControlComp>()) {
-            PrimaryControlComp &comp = subscription_manager.get_component<PrimaryControlComp>();
-            speed_ = 3.6f * comp.get_velocity();
+        if (subscription_manager.has_component<PrimaryVehicleStateComp>()) {
+            PrimaryVehicleStateComp &comp =
+                subscription_manager.get_component<PrimaryVehicleStateComp>();
+            speed_ = comp.get_velocity();
         }
 
         if (subscription_manager.has_component<SecondaryVehicleStateComp>()) {
