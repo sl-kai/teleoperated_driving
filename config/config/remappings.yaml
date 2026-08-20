@@ -131,7 +131,7 @@ tod_communication_interface:
   - from: /vehicle/network/config/from_operator/set_monitoring_status
     to: /vehicle/monitoring/network_monitor/set_monitoring_status
   - from: /vehicle/network/config/from_operator/set_actuation_enabled
-    to: /vehicle/interface/peanut01/ControlBridge/set_actuation_enabled
+    to: /vehicle/interface/peanut01/set_actuation_enabled
   # operator
   - from: /operator/network/config/input/operator_status
     to: /operator/statemachine/output/operator_status

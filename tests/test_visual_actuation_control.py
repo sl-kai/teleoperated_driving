@@ -192,7 +192,7 @@ def test_actuation_service_and_state_remappings_are_explicit():
     }
     assert (
         "/vehicle/network/config/from_operator/set_actuation_enabled",
-        "/vehicle/interface/peanut01/ControlBridge/set_actuation_enabled",
+        "/vehicle/interface/peanut01/set_actuation_enabled",
     ) in communication_pairs
     assert (
         "/vehicle/network/data/to_operator/actuation_control_state",
