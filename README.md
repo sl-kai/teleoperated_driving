@@ -64,6 +64,27 @@ Peanut01 的视频、雷达、轨迹和车辆接口配置位于
 `config/config/vehicle_config/peanut01/` 及 `config/config/package_config/`。
 真实车辆测试前必须确认急停、安全驾驶员、控制限幅、挡位逻辑和车轮架空条件。
 
+## 全新机器部署
+
+在每台设备上安装 Docker Engine、Compose 插件和 Git，并确认版本：
+
+```bash
+docker version
+docker compose version
+```
+
+拉取源码和部署配置：
+
+```bash
+git clone -b ros2 https://github.com/sl-kai/teleoperated_driving.git \
+  ~/teleoperated_driving
+cd ~/teleoperated_driving
+```
+
+根据设备修改 `.env` 中的 `DOCKER_ROS_DOMAIN_ID`、`VEHICLE_ID`、
+`VEHICLE_NETWORK_INTERFACE` 和 `OPERATOR_NETWORK_INTERFACE`，然后按照上方
+“镜像”章节拉取对应的操作端或车端镜像。
+
 ## 启动与停止
 
 建议先启动车端，再启动操作端。
@@ -100,6 +121,32 @@ ros2 service call \
   /operator/input_devices/InputDevice/change_input_device \
   tod_operator_msgs/srv/InputDevice \
   "{input_device_directory: /home/tum/wsp/install/tod_input_devices/share/tod_input_devices/config/logitechg923.yaml}"
+'
+```
+
+确认输入设备类型：
+
+```bash
+docker compose exec -T tod_operator bash -c '
+source /opt/ros/humble/setup.bash
+source /home/tum/wsp/install/setup.bash
+ros2 param get /operator/input_devices/InputDevice type
+'
+```
+
+正确输出应为 `String value is: Usb`。查看方向盘原始数据和发布频率：
+
+```bash
+docker compose exec -T tod_operator bash -c '
+source /opt/ros/humble/setup.bash
+source /home/tum/wsp/install/setup.bash
+ros2 topic echo /operator/input_devices/output/joystick
+'
+
+docker compose exec -T tod_operator bash -c '
+source /opt/ros/humble/setup.bash
+source /home/tum/wsp/install/setup.bash
+ros2 topic hz /operator/input_devices/output/joystick
 '
 ```
 
@@ -156,6 +203,71 @@ ros2 topic hz /vehicle/network/data/from_operator/primary_control_cmd
 | 左前轨迹 | `tod_operator` | `/operator/interface/visual/input/driving_lane_front_left` |
 
 正常情况下控制命令频率约为 `10 Hz`。使用 `Ctrl+C` 退出持续输出。
+
+检查车端安全模块和 Peanut01 接口输出：
+
+```bash
+docker compose exec -T tod_vehicle bash -c '
+source /opt/ros/humble/setup.bash
+source /home/tum/wsp/install/setup.bash
+ros2 topic echo /vehicle/safety/output/primary_control_cmd
+'
+
+docker compose exec -T tod_vehicle bash -c '
+source /opt/ros/humble/setup.bash
+source /home/tum/wsp/install/setup.bash
+ros2 topic echo /debug/tod_peanut01/autoware_control_cmd
+'
+```
+
+`DryRunInterface` 的调试输出不代表命令已经发送到底盘。只有真实控制桥处于
+`ACTIVE`，并且真实控制话题存在发布者时，才会向底盘接口发布命令。
+
+## 真实控制安全检查
+
+默认情况下真实控制关闭。启用前必须确认车辆处于软件 N 挡、踏板完全松开、
+车辆周围无人且急停可用：
+
+```bash
+docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=7 && ros2 param set /vehicle/interface/peanut01/ControlBridge enable_actuation true"
+```
+
+关闭真实控制：
+
+```bash
+docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=7 && ros2 param set /vehicle/interface/peanut01/ControlBridge enable_actuation false"
+```
+
+查看启用参数和诊断状态：
+
+```bash
+docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=7 && ros2 param get /vehicle/interface/peanut01/ControlBridge enable_actuation"
+
+docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=0 && ros2 topic echo /debug/tod_peanut01/bridge_diagnostics --once"
+```
+
+状态含义：`DISABLED` 为关闭，`ARMING` 为等待安全条件，`ACTIVE` 为已激活，
+`FAULT` 为安全故障锁存。`ACTIVE` 时以下四个真实控制话题的发布者数量应为 `1`；
+`DISABLED` 或 `FAULT` 时应为 `0`：
+
+```bash
+docker compose exec -T tod_vehicle bash -lc '
+source /opt/ros/humble/setup.bash
+source /home/tum/wsp/install/setup.bash
+export ROS_DOMAIN_ID=0
+ros2 topic info /control/command/control_cmd
+ros2 topic info /control/command/gear_cmd
+ros2 topic info /control/command/turn_indicators_cmd
+ros2 topic info /control/command/hazard_lights_cmd
+'
+```
+
+故障进入 `FAULT` 后，先关闭真实控制并排除急停、许可、命令超时、反馈超时、
+本地接管和底盘执行反馈不一致等原因，再重新启用：
+
+```bash
+docker compose exec -T tod_vehicle bash -lc "source /opt/ros/humble/setup.bash && source /home/tum/wsp/install/setup.bash && export ROS_DOMAIN_ID=7 && ros2 param set /vehicle/interface/peanut01/ControlBridge enable_actuation false"
+```
 
 ## 构建与发布
 
