@@ -672,7 +672,7 @@ class DriveInfoLayer : public UILayer {
         draw_list->AddCircleFilled(center, 23.0f, IM_COL32(18, 24, 30, 220));
         draw_list->AddCircle(center, 23.0f, color, 32, 2.0f);
         // Keep the original power glyph, with its opening centered at the top.
-        draw_list->PathArcTo(center, 12.0f, 0.0f, IM_PI * 1.5f, 28);
+        draw_list->PathArcTo(center, 12.0f, -IM_PI * 0.25f, IM_PI * 1.25f, 28);
         draw_list->PathStroke(color, false, 3.5f);
         draw_list->AddLine(
             ImVec2(center.x, center.y - 15.0f),
