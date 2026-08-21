@@ -133,16 +133,42 @@ ros2 param get /operator/input_devices/InputDevice type
 '
 ```
 
-正确输出应为 `String value is: Usb`。查看方向盘原始数据和发布频率：
+正确输出应为 `String value is: Usb`。查看 G923 发布的原始轴和按键数据：
 
 ```bash
-docker compose exec -T tod_operator bash -c '
+docker compose exec -T tod_operator bash -lc '
 source /opt/ros/humble/setup.bash
 source /home/tum/wsp/install/setup.bash
 ros2 topic echo /operator/input_devices/output/joystick
 '
+```
 
-docker compose exec -T tod_operator bash -c '
+数组下标从 `0` 开始，G923 的映射如下：
+
+| 类型 | 下标 | 控件 |
+| --- | ---: | --- |
+| `axes` | 0 | 方向盘 |
+| `axes` | 1 | 油门（最右侧） |
+| `axes` | 2 | 刹车（中间） |
+| `axes` | 3 | 离合（最左侧） |
+| `buttons` | 0 | L3 |
+| `buttons` | 1 | R3 |
+| `buttons` | 2 | PS |
+| `buttons` | 3 | 三条横线 |
+| `buttons` | 4 | 回车 |
+| `buttons` | 5 | + |
+| `buttons` | 6 | - |
+| `buttons` | 7 | 右拨片 |
+| `buttons` | 8 | 左拨片 |
+| `buttons` | 9 | O |
+| `buttons` | 10 | X |
+| `buttons` | 11 | 方形 |
+| `buttons` | 12 | 三角形 |
+
+查看发布频率：
+
+```bash
+docker compose exec -T tod_operator bash -lc '
 source /opt/ros/humble/setup.bash
 source /home/tum/wsp/install/setup.bash
 ros2 topic hz /operator/input_devices/output/joystick
