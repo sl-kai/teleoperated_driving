@@ -12,11 +12,16 @@
       DecreaseSpeed: 20
       IncreaseGear: 4
       DecreaseGear: 5
+      CustomO: 2
+      CustomX: 0
+      CustomSquare: 1
+      CustomTriangle: 3
 
     axis_config:
       Steering: 0
       Throttle: 2
       Brake: 3
+      Clutch: 1
 
     input_device_has_separate_braking_axis: true
 

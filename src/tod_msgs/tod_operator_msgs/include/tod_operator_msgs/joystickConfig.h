@@ -24,7 +24,11 @@ enum ButtonPos {
     INCREASE_SPEED  = 5,
     DECREASE_SPEED  = 6,
     INCREASE_GEAR   = 7,
-    DECREASE_GEAR   = 8
+    DECREASE_GEAR   = 8,
+    CUSTOM_O        = 9,
+    CUSTOM_X        = 10,
+    CUSTOM_SQUARE   = 11,
+    CUSTOM_TRIANGLE = 12
 };
 
 /**
@@ -37,6 +41,7 @@ enum ButtonPos {
 enum AxesPos {
     STEERING        = 0,
     THROTTLE        = 1,
-    BRAKE           = 2
+    BRAKE           = 2,
+    CLUTCH          = 3
 };
 }; // namespace joystick

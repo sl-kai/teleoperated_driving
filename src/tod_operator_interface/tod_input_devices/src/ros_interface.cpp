@@ -23,9 +23,14 @@ RosInterface::RosInterface(int argc, char** pArgv, InputDeviceController* parent
     this->declare_parameter<int>("button_config.DecreaseSpeed");
     this->declare_parameter<int>("button_config.IncreaseGear");
     this->declare_parameter<int>("button_config.DecreaseGear");
+    this->declare_parameter<int>("button_config.CustomO", -1);
+    this->declare_parameter<int>("button_config.CustomX", -1);
+    this->declare_parameter<int>("button_config.CustomSquare", -1);
+    this->declare_parameter<int>("button_config.CustomTriangle", -1);
     this->declare_parameter<int>("axis_config.Steering");
     this->declare_parameter<int>("axis_config.Throttle");
     this->declare_parameter<int>("axis_config.Brake");
+    this->declare_parameter<int>("axis_config.Clutch", -1);
     this->declare_parameter<bool>("invert_axis.Steering");
     this->declare_parameter<bool>("invert_axis.Throttle");
     this->declare_parameter<bool>("invert_axis.Brake");

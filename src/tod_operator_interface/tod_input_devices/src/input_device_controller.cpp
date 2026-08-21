@@ -192,9 +192,14 @@ void InputDeviceController::update_mapping_from_param_workspace() {
     int par_decrease_speed = _ros->get_parameter("button_config.DecreaseSpeed").get_parameter_value().get<int>();
     int par_increase_gear = _ros->get_parameter("button_config.IncreaseGear").get_parameter_value().get<int>();
     int par_decrease_gear = _ros->get_parameter("button_config.DecreaseGear").get_parameter_value().get<int>();
+    int par_custom_o = _ros->get_parameter("button_config.CustomO").get_parameter_value().get<int>();
+    int par_custom_x = _ros->get_parameter("button_config.CustomX").get_parameter_value().get<int>();
+    int par_custom_square = _ros->get_parameter("button_config.CustomSquare").get_parameter_value().get<int>();
+    int par_custom_triangle = _ros->get_parameter("button_config.CustomTriangle").get_parameter_value().get<int>();
     int par_axis_steering = _ros->get_parameter("axis_config.Steering").get_parameter_value().get<int>();
     int par_axis_throttle = _ros->get_parameter("axis_config.Throttle").get_parameter_value().get<int>();
     int par_axis_brake = _ros->get_parameter("axis_config.Brake").get_parameter_value().get<int>();
+    int par_axis_clutch = _ros->get_parameter("axis_config.Clutch").get_parameter_value().get<int>();
     bool par_invert_axis_steering = _ros->get_parameter("invert_axis.Steering").get_parameter_value().get<bool>();
     bool par_invert_axis_throttle = _ros->get_parameter("invert_axis.Throttle").get_parameter_value().get<bool>();
     bool par_invert_axis_brake = _ros->get_parameter("invert_axis.Brake").get_parameter_value().get<bool>();
@@ -208,6 +213,14 @@ void InputDeviceController::update_mapping_from_param_workspace() {
     _button_mapping[par_decrease_speed] = joystick::ButtonPos::DECREASE_SPEED;
     _button_mapping[par_increase_gear] = joystick::ButtonPos::INCREASE_GEAR;
     _button_mapping[par_decrease_gear] = joystick::ButtonPos::DECREASE_GEAR;
+    if (par_custom_o >= 0)
+        _button_mapping[par_custom_o] = joystick::ButtonPos::CUSTOM_O;
+    if (par_custom_x >= 0)
+        _button_mapping[par_custom_x] = joystick::ButtonPos::CUSTOM_X;
+    if (par_custom_square >= 0)
+        _button_mapping[par_custom_square] = joystick::ButtonPos::CUSTOM_SQUARE;
+    if (par_custom_triangle >= 0)
+        _button_mapping[par_custom_triangle] = joystick::ButtonPos::CUSTOM_TRIANGLE;
 
     _axis_mapping.insert(std::make_pair(par_axis_steering, AxisItem(joystick::AxesPos::STEERING, 
                         par_invert_axis_steering)));
@@ -215,6 +228,8 @@ void InputDeviceController::update_mapping_from_param_workspace() {
                         par_invert_axis_throttle)));
     _axis_mapping.insert(std::make_pair(par_axis_brake, AxisItem(joystick::AxesPos::BRAKE,
                         par_invert_axis_brake)));
+    if (par_axis_clutch >= 0)
+        _axis_mapping.insert(std::make_pair(par_axis_clutch, AxisItem(joystick::AxesPos::CLUTCH, false)));
 }
 
 std::vector<rclcpp::Parameter> InputDeviceController::Yayp_te(std::string path_to_yaml) {
