@@ -23,12 +23,6 @@ RUN groupadd --gid ${DOCKER_GID} ${DOCKER_USERNAME} \
     && rm -rf /var/lib/apt-get/lists/*
 ENV DOCKER_USERNAME=${DOCKER_USERNAME}
 
-###--- Use a nearby Ubuntu mirror for more reliable package downloads -----------###
-RUN sed -i \
-    -e 's#http://archive.ubuntu.com/ubuntu#http://mirrors.tuna.tsinghua.edu.cn/ubuntu#g' \
-    -e 's#http://security.ubuntu.com/ubuntu#http://mirrors.tuna.tsinghua.edu.cn/ubuntu#g' \
-    /etc/apt/sources.list
-
 ###--- Remove old GPG key and update ---###
 RUN set -eux; \
     rm -f /etc/apt/sources.list.d/ros2*.list \

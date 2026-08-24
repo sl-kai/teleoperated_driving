@@ -98,6 +98,14 @@ class DeploymentConfigTests(unittest.TestCase):
             workflow,
         )
 
+    def test_ghcr_build_keeps_ubuntu_apt_sources_official(self):
+        dockerfile = (REPO / "docker/dockerfile").read_text(encoding="utf-8")
+
+        self.assertNotIn(
+            "mirrors.tuna.tsinghua.edu.cn/ubuntu#g",
+            dockerfile,
+        )
+
     def test_xauthority_mount_uses_container_target(self):
         compose = (REPO / "docker-compose.yaml").read_text(encoding="utf-8")
 
