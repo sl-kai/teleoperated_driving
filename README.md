@@ -86,6 +86,42 @@ cd ~/teleoperated_driving
 `VEHICLE_NETWORK_INTERFACE` 和 `OPERATOR_NETWORK_INTERFACE`，然后按照上方
 “镜像”章节拉取对应的操作端或车端镜像。
 
+### 无 GPU 操作端图形初始化
+
+没有 NVIDIA GPU 的操作端需要使用软件渲染。创建 `docker-compose.local.yaml`：
+
+```yaml
+services:
+  tod_operator:
+    environment:
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      NVIDIA_VISIBLE_DEVICES: "void"
+      NVIDIA_DRIVER_CAPABILITIES: ""
+    deploy:
+      resources:
+        reservations:
+          devices: !reset []
+```
+
+将该文件加入 `.env` 的 `COMPOSE_FILE`，例如：
+
+```env
+COMPOSE_FILE=docker-compose.yaml:docker-compose.local.yaml:docker-compose.peanut01-dry-run.yaml:docker-compose.peanut01-video.yaml
+```
+
+在图形桌面终端执行以下脚本。它会授予容器访问 X11 的权限，查找当前
+`XAUTHORITY` 文件并更新 `.env`，然后重建操作端：
+
+```bash
+cd ~/teleoperated_driving
+chmod +x work/start_operator.sh
+./work/start_operator.sh
+```
+
+每次重新登录图形桌面或重启机器后，都应再次运行该脚本。若 Docker 配置
+`/etc/docker/daemon.json` 包含 `"default-runtime": "nvidia"`，无 GPU 机器还需要
+删除该项并执行 `sudo systemctl restart docker`。
+
 ## 启动与停止
 
 建议先启动车端，再启动操作端。

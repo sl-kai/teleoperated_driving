@@ -6,7 +6,6 @@
 
 #include "drive_info_layer.hpp"
 #include "scene_layer.hpp"
-#include "settings_layer.hpp"
 //#include "speed_layer.hpp"
 #include "state_layer.hpp"
 //#include "switch_camera_layer.hpp"
@@ -64,7 +63,6 @@ class VisualApplicationNode : public tod_gl::SceneApplication {
         // push_overlay(new SwitchCameraLayer<tod_gl::TrajectoryGuidanceStateComponent>(_ros, _active_scene, view_port_layer));
         // push_overlay(new TrafficSignLayer<tod_gl::OdometryComponent>(_ros, _active_scene, view_port_layer)); 
         
-        push_overlay(new SettingsLayer(_ros, _active_scene, ImGuiDir_Up));
         // push_overlay(new tod_gl::DebugLayer(_ros, _active_scene)); push_overlay(new UILayer(_ros, _active_scene, view_port_layer));
     }
 };
