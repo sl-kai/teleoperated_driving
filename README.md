@@ -65,7 +65,17 @@ Peanut01 的视频、雷达、轨迹和车辆接口配置位于
 
 ## 全新机器部署
 
-在操作端宿主机安装并绑定支持 G923 的 Linux 方向盘驱动，例如兼容 G923 的 new-lg4ff。
+操作端使用 G923 时，在宿主机需安装驱动new-lg4ff：
+
+```bash
+sudo apt update
+sudo apt install -y git dkms build-essential "linux-headers-$(uname -r)"
+sudo git clone https://github.com/berarma/new-lg4ff.git /usr/src/new-lg4ff
+sudo dkms install /usr/src/new-lg4ff
+
+dkms status
+sudo reboot
+```
 
 在每台设备上安装 Docker Engine、Compose 插件和 Git，并确认版本：
 
