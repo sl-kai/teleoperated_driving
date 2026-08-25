@@ -33,7 +33,7 @@ class Peanut01LidarDeploymentTest(unittest.TestCase):
         sensors = yaml.safe_load(SENSORS.read_text(encoding="utf-8"))
 
         topic = sensors["lidar_topics_namespace"] + sensors["pointcloud_name"]
-        self.assertEqual("/main_lidar/rslidar_points", topic)
+        self.assertEqual("/main_lidar/rslidar_points_remote", topic)
 
     def test_vehicle_launch_encodes_in_sensor_domain_and_bridges_compressed_data(self):
         launch = VEHICLE_LAUNCH.read_text(encoding="utf-8")
