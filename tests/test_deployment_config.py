@@ -111,6 +111,14 @@ class DeploymentConfigTests(unittest.TestCase):
 
         self.assertEqual(compose.count("- XAUTHORITY=/root/.Xauthority"), 2)
 
+    def test_peanut01_vehicle_feedback_timeout_is_one_second(self):
+        params = (
+            REPO
+            / "config/config/package_config/tod_peanut01_interface/params.yaml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("feedback_timeout_ms: 1000", params)
+
 
 if __name__ == "__main__":
     unittest.main()
